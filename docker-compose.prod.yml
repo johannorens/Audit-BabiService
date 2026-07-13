@@ -9,35 +9,48 @@ services:
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_data_prod:/var/lib/mysql
     networks:
-      - babi_network
+      - babi_network_prod
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USERNAME}", "-p${DB_PASSWORD}"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "${DB_USERNAME}",
+          "-p${DB_PASSWORD}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
+    # Pas de port expose publiquement : seul "back" doit atteindre MySQL, via le reseau interne.
 
   back:
     build:
-      context: ./babi
+      context: ./babi-backend # <-- adapte si ton dossier s'appelle vraiment "babi"
       dockerfile: Dockerfile.prod
     container_name: babi_back_prod
     restart: unless-stopped
     ports:
       - "8000:8000"
     env_file:
-      - ./babi/.env
+      - ./babi-backend/.env.production # <-- fichier dedie a la prod, PAS le .env de dev (mailpit)
     depends_on:
       mysql:
         condition: service_healthy
     networks:
-      - babi_network
+      - babi_network_prod
 
   front:
     build:
-      context: ./front/mon-app-react
+      context: ./front/Babi-frontend
       dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: ${VITE_API_URL}
     container_name: babi_front_prod
     restart: unless-stopped
     ports:
@@ -45,12 +58,12 @@ services:
     depends_on:
       - back
     networks:
-      - babi_network
+      - babi_network_prod
 
 networks:
-  babi_network:
+  babi_network_prod:
     driver: bridge
 
 volumes:
-  mysql_data:
+  mysql_data_prod:
     name: babiservice2_mysql_data_prod
