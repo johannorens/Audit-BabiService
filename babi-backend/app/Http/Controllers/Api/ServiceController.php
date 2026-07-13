@@ -7,6 +7,7 @@ use App\Mail\AnnoncePublieeMail;
 use App\Models\Service;
 use App\Http\Requests\Service\StoreServiceRequest;
 use App\Http\Requests\Service\UpdateServiceRequest;
+use App\Http\Resources\ServiceResource;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -18,7 +19,9 @@ class ServiceController extends Controller
      */
     public function index()
     {
-        return response()->json(Service::with(['prestataire', 'categorie'])->get());
+        return ServiceResource::collection(
+            Service::with(['prestataire', 'categorie'])->paginate(15)
+        );
     }
 
     /**
@@ -29,12 +32,7 @@ class ServiceController extends Controller
         $data = $request->validated();
 
         if ($request->hasFile('photo')) {
-            $photo = $request->file('photo');
-            $uploadDir = public_path('uploads/services');
-            File::ensureDirectoryExists($uploadDir);
-            $filename = time() . '_' . Str::random(8) . '.' . $photo->getClientOriginalExtension();
-            $photo->move($uploadDir, $filename);
-            $data['photo_path'] = asset('uploads/services/' . $filename);
+            $data['photo_path'] = $this->enregistrerPhoto($request->file('photo'));
         }
 
         $service = Service::create($data);
@@ -44,7 +42,7 @@ class ServiceController extends Controller
             Mail::to($service->prestataire->email)->send(new AnnoncePublieeMail($service));
         }
 
-        return response()->json($service, 201);
+        return (new ServiceResource($service))->response()->setStatusCode(201);
     }
 
     /**
@@ -53,7 +51,7 @@ class ServiceController extends Controller
     public function show(string $id)
     {
         $service = Service::with(['prestataire', 'categorie', 'reservations'])->findOrFail($id);
-        return response()->json($service);
+        return new ServiceResource($service);
     }
 
     /**
@@ -65,16 +63,12 @@ class ServiceController extends Controller
         $data = $request->validated();
 
         if ($request->hasFile('photo')) {
-            $photo = $request->file('photo');
-            $uploadDir = public_path('uploads/services');
-            File::ensureDirectoryExists($uploadDir);
-            $filename = time() . '_' . Str::random(8) . '.' . $photo->getClientOriginalExtension();
-            $photo->move($uploadDir, $filename);
-            $data['photo_path'] = asset('uploads/services/' . $filename);
+            $this->supprimerAnciennePhoto($service);
+            $data['photo_path'] = $this->enregistrerPhoto($request->file('photo'));
         }
 
         $service->update($data);
-        return response()->json($service);
+        return new ServiceResource($service->fresh(['prestataire', 'categorie']));
     }
 
     /**
@@ -83,7 +77,38 @@ class ServiceController extends Controller
     public function destroy(string $id)
     {
         $service = Service::findOrFail($id);
+        $this->supprimerAnciennePhoto($service);
         $service->delete();
         return response()->json(['message' => 'Service supprimé']);
+    }
+
+    /**
+     * Enregistre la photo uploadée et retourne son URL publique.
+     */
+    private function enregistrerPhoto($photo): string
+    {
+        $uploadDir = public_path('uploads/services');
+        File::ensureDirectoryExists($uploadDir);
+        $filename = time() . '_' . Str::random(8) . '.' . $photo->getClientOriginalExtension();
+        $photo->move($uploadDir, $filename);
+
+        return asset('uploads/services/' . $filename);
+    }
+
+    /**
+     * Supprime le fichier physique de l'ancienne photo pour éviter les fichiers orphelins.
+     */
+    private function supprimerAnciennePhoto(Service $service): void
+    {
+        if (! $service->photo_path) {
+            return;
+        }
+
+        $filename = basename(parse_url($service->photo_path, PHP_URL_PATH));
+        $path = public_path('uploads/services/' . $filename);
+
+        if (File::exists($path)) {
+            File::delete($path);
+        }
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PrestataireResource;
+use App\Http\Resources\UtilisateurResource;
 use App\Models\Prestataire;
 use App\Models\Utilisateur;
 use App\Models\Reservation;
@@ -26,24 +28,26 @@ class AdminDashboardController extends Controller
                 ->sum('services.tarif'),
         ];
 
+        // Regroupement fait directement en SQL (GROUP BY) plutôt qu'en PHP :
+        // évite de charger toutes les réservations de l'année en mémoire.
         $reservations_par_mois = Reservation::whereYear('created_at', now()->year)
-            ->get()
-            ->groupBy(fn ($r) => $r->created_at->month)
-            ->map->count()
-            ->sortKeys()
-            ->map(fn ($total, $mois) => ['mois' => $mois, 'total' => $total])
-            ->values();
+            ->selectRaw('MONTH(created_at) as mois, COUNT(*) as total')
+            ->groupBy('mois')
+            ->orderBy('mois')
+            ->get();
 
         $activite_recente = [
-            'derniers_utilisateurs'  => Utilisateur::latest()->limit(5)->get(),
+            'derniers_utilisateurs'  => UtilisateurResource::collection(Utilisateur::latest()->limit(5)->get()),
             'dernieres_reservations' => Reservation::where('statut', 'confirmee')->latest()->limit(5)->get(),
             'derniers_avis'          => Avis::latest()->limit(5)->get(),
         ];
 
-        $a_valider = Prestataire::with('categorie')
-            ->where('statut', 'en_attente')
-            ->latest()
-            ->get();
+        $a_valider = PrestataireResource::collection(
+            Prestataire::with('categorie')
+                ->where('statut', 'en_attente')
+                ->latest()
+                ->get()
+        );
 
         return response()->json([
             'stats'                 => $stats,
@@ -69,12 +73,12 @@ class AdminDashboardController extends Controller
 
     public function utilisateurs()
     {
-        $utilisateurs = Utilisateur::withCount('reservations')->latest()->get();
-        $prestataires = Prestataire::with('categorie')->latest()->get();
+        $utilisateurs = Utilisateur::withCount('reservations')->latest()->paginate(15);
+        $prestataires = Prestataire::with('categorie')->latest()->paginate(15);
 
         return response()->json([
-            'utilisateurs' => $utilisateurs,
-            'prestataires' => $prestataires,
+            'utilisateurs' => UtilisateurResource::collection($utilisateurs),
+            'prestataires' => PrestataireResource::collection($prestataires),
         ]);
     }
 
@@ -107,8 +111,8 @@ class AdminDashboardController extends Controller
     {
         $missions = Reservation::with(['utilisateur', 'service.prestataire'])
             ->latest()
-            ->get()
-            ->map(fn($r) => [
+            ->paginate(20)
+            ->through(fn($r) => [
                 'id'          => $r->id_reservation,
                 'service'     => $r->service?->nom_service,
                 'client'      => trim(($r->utilisateur?->prenom ?? '') . ' ' . ($r->utilisateur?->nom ?? '')),

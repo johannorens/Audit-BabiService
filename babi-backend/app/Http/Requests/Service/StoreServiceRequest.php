@@ -26,7 +26,6 @@ class StoreServiceRequest extends FormRequest
             'nom_service'    => 'required|string|max:100',
             'description'    => 'nullable|string',
             'photo'          => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'photo_path'     => 'nullable|string|max:255',
             'tarif'          => 'required|numeric|min:0',
             'disponibilite'  => ['required', 'boolean'],
             'id_prestataire' => 'required|exists:prestataires,id_prestataire',

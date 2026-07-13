@@ -7,7 +7,8 @@ use App\Models\Avis;
 use App\Models\Reservation;
 use App\Http\Requests\Avis\StoreAvisRequest;
 use App\Http\Requests\Avis\UpdateAvisRequest;
-use Illuminate\Http\Request;
+use App\Http\Requests\Avis\SignalerAvisRequest;
+use App\Http\Resources\AvisResource;
 
 class AvisController extends Controller
 {
@@ -16,10 +17,10 @@ class AvisController extends Controller
      */
     public function index()
     {
-        return response()->json(
+        return AvisResource::collection(
             Avis::with(['utilisateur', 'reservation'])
                 ->where('id_utilisateur', auth()->id())
-                ->get()
+                ->paginate(15)
         );
     }
 
@@ -28,12 +29,12 @@ class AvisController extends Controller
      */
     public function parService(string $id_service)
     {
-        return response()->json(
+        return AvisResource::collection(
             Avis::with('utilisateur')
                 ->where('signale', false)
-                ->whereHas('reservation', fn ($q) => $q->where('id_service', $id_service))
+                ->whereHas('reservation', fn($q) => $q->where('id_service', $id_service))
                 ->orderByDesc('date_avis')
-                ->get()
+                ->paginate(15)
         );
     }
 
@@ -50,25 +51,23 @@ class AvisController extends Controller
             ...$request->validated(),
             'id_utilisateur' => auth()->id(),
         ]);
-        return response()->json($avis, 201);
+        $avis->load('utilisateur');
+
+        return (new AvisResource($avis))->response()->setStatusCode(201);
     }
 
     /**
      * Signale un avis comme inapproprié. Il est alors masqué de la liste publique
      * et exclu du calcul de la note moyenne, en attente de modération.
      */
-    public function signaler(Request $request, string $id)
+    public function signaler(SignalerAvisRequest $request, string $id)
     {
-        $request->validate([
-            'motif' => 'required|string|max:255',
-        ]);
-
         $avis = Avis::findOrFail($id);
         abort_if($avis->id_utilisateur === auth()->id(), 422, "Vous ne pouvez pas signaler votre propre avis.");
 
         $avis->update([
             'signale' => true,
-            'motif_signalement' => $request->input('motif'),
+            'motif_signalement' => $request->validated('motif'),
             'signale_par' => auth()->id(),
         ]);
 
@@ -82,7 +81,7 @@ class AvisController extends Controller
     {
         $avis = Avis::with(['utilisateur', 'reservation'])->findOrFail($id);
         abort_if($avis->id_utilisateur !== auth()->id(), 403);
-        return response()->json($avis);
+        return new AvisResource($avis);
     }
 
     /**
@@ -93,7 +92,7 @@ class AvisController extends Controller
         $avis = Avis::findOrFail($id);
         abort_if($avis->id_utilisateur !== auth()->id(), 403);
         $avis->update($request->validated());
-        return response()->json($avis);
+        return new AvisResource($avis->fresh('utilisateur'));
     }
 
     /**

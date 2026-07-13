@@ -7,6 +7,7 @@ use App\Models\Prestataire;
 use App\Http\Requests\Prestataire\StorePrestaireRequest;
 use App\Http\Requests\Prestataire\UpdatePrestaireRequest;
 use App\Http\Requests\Prestataire\CandidaturePrestataireRequest;
+use App\Http\Resources\PrestataireResource;
 
 class PrestaireController extends Controller
 {
@@ -15,7 +16,9 @@ class PrestaireController extends Controller
      */
     public function index()
     {
-        return response()->json(Prestataire::with(['services', 'categorie'])->get());
+        return PrestataireResource::collection(
+            Prestataire::with(['services', 'categorie'])->paginate(15)
+        );
     }
 
     /**
@@ -27,7 +30,7 @@ class PrestaireController extends Controller
             ...$request->validated(),
             'statut' => 'valide',
         ]);
-        return response()->json($prestataire, 201);
+        return (new PrestataireResource($prestataire))->response()->setStatusCode(201);
     }
 
     /**
@@ -39,7 +42,7 @@ class PrestaireController extends Controller
             ...$request->validated(),
             'statut' => 'en_attente',
         ]);
-        return response()->json($prestataire, 201);
+        return (new PrestataireResource($prestataire))->response()->setStatusCode(201);
     }
 
     /**
@@ -48,7 +51,7 @@ class PrestaireController extends Controller
     public function show(string $id)
     {
         $prestataire = Prestataire::with(['services', 'categorie'])->findOrFail($id);
-        return response()->json($prestataire);
+        return new PrestataireResource($prestataire);
     }
 
     /**
@@ -58,7 +61,7 @@ class PrestaireController extends Controller
     {
         $prestataire = Prestataire::findOrFail($id);
         $prestataire->update($request->validated());
-        return response()->json($prestataire);
+        return new PrestataireResource($prestataire->fresh(['services', 'categorie']));
     }
 
     /**
