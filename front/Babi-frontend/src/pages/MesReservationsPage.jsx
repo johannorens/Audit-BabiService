@@ -4,7 +4,11 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ReservationCard from "../components/reservations/ReservationCard";
-import { apiGetReservations, apiUpdateReservation, apiCreateAvis } from "../services/api";
+import {
+  apiGetReservations,
+  apiUpdateReservation,
+  apiCreateAvis,
+} from "../services/api";
 
 const FILTERS = [
   { label: "Toutes", value: "toutes" },
@@ -25,7 +29,10 @@ export default function MesReservationsPage() {
     apiGetReservations()
       .then((res) => {
         if (!active) return;
-        if (res.ok) setReservations(res.data);
+        if (res.ok)
+          setReservations(
+            Array.isArray(res.data) ? res.data : (res.data.data ?? []),
+          );
         else setError(res.data);
       })
       .finally(() => {
@@ -51,12 +58,14 @@ export default function MesReservationsPage() {
       return;
     }
     setReservations((prev) =>
-      prev.map((r) => (r.id_reservation === id ? res.data : r))
+      prev.map((r) => (r.id_reservation === id ? res.data : r)),
     );
   }
 
   async function handleMarkTerminee(id) {
-    const confirmed = window.confirm("Confirmer que cette prestation est terminée ?");
+    const confirmed = window.confirm(
+      "Confirmer que cette prestation est terminée ?",
+    );
     if (!confirmed) return;
 
     const res = await apiUpdateReservation(id, { statut: "terminee" });
@@ -65,7 +74,7 @@ export default function MesReservationsPage() {
       return;
     }
     setReservations((prev) =>
-      prev.map((r) => (r.id_reservation === id ? res.data : r))
+      prev.map((r) => (r.id_reservation === id ? res.data : r)),
     );
   }
 
@@ -74,7 +83,7 @@ export default function MesReservationsPage() {
     if (!res.ok) return false;
 
     setReservations((prev) =>
-      prev.map((r) => (r.id_reservation === id ? { ...r, avis: res.data } : r))
+      prev.map((r) => (r.id_reservation === id ? { ...r, avis: res.data } : r)),
     );
     return true;
   }
@@ -136,7 +145,11 @@ export default function MesReservationsPage() {
           {!loading && !error && filtered.length === 0 && (
             <div className="text-center bg-[#F0F7F4] rounded-2xl p-10">
               <p className="text-sm text-[#3D5A50] mb-4">
-                Aucune réservation {activeFilter !== "toutes" ? "dans cette catégorie" : "pour le moment"}.
+                Aucune réservation{" "}
+                {activeFilter !== "toutes"
+                  ? "dans cette catégorie"
+                  : "pour le moment"}
+                .
               </p>
               <Link
                 to="/services"

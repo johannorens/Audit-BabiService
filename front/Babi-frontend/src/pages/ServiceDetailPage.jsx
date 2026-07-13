@@ -23,7 +23,7 @@ export default function ServiceDetailPage() {
     apiGetService(id)
       .then((res) => {
         if (!active) return;
-        if (res.ok) setService(res.data);
+        if (res.ok) setService(res.data.data ?? res.data);
         else setError(res.data);
       })
       .finally(() => {
@@ -38,7 +38,10 @@ export default function ServiceDetailPage() {
     let active = true;
     apiGetServiceAvis(id)
       .then((res) => {
-        if (active && res.ok) setAvisList(res.data);
+        if (active && res.ok)
+          setAvisList(
+            Array.isArray(res.data) ? res.data : (res.data.data ?? []),
+          );
       })
       .finally(() => {
         if (active) setLoadingAvis(false);
@@ -85,7 +88,14 @@ export default function ServiceDetailPage() {
     );
   }
 
-  const { nom_service, description, tarif, disponibilite, prestataire, categorie } = service;
+  const {
+    nom_service,
+    description,
+    tarif,
+    disponibilite,
+    prestataire,
+    categorie,
+  } = service;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -124,12 +134,16 @@ export default function ServiceDetailPage() {
                     {prestataire.localisation}
                   </span>
                 )}
-                {categorie?.nom_categorie && <span>{categorie.nom_categorie}</span>}
+                {categorie?.nom_categorie && (
+                  <span>{categorie.nom_categorie}</span>
+                )}
               </div>
             </div>
             <div className="text-right flex-shrink-0">
               <p className="text-lg font-semibold text-[#0B2B26]">
-                {tarif ? `${Number(tarif).toLocaleString("fr-FR")} F` : "Sur devis"}
+                {tarif
+                  ? `${Number(tarif).toLocaleString("fr-FR")} F`
+                  : "Sur devis"}
               </p>
               {disponibilite ? (
                 <span className="inline-block mt-1 text-xs font-medium text-[#0E9F6E]">
@@ -157,8 +171,12 @@ export default function ServiceDetailPage() {
 
           {description && (
             <div className="mb-10">
-              <h2 className="text-lg font-bold text-[#0B2B26] mb-2">Description</h2>
-              <p className="text-sm text-[#3D5A50] leading-relaxed">{description}</p>
+              <h2 className="text-lg font-bold text-[#0B2B26] mb-2">
+                Description
+              </h2>
+              <p className="text-sm text-[#3D5A50] leading-relaxed">
+                {description}
+              </p>
             </div>
           )}
 
@@ -170,7 +188,10 @@ export default function ServiceDetailPage() {
             {loadingAvis && (
               <div className="space-y-3">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="h-20 rounded-2xl bg-[#F0F7F4] animate-pulse" />
+                  <div
+                    key={i}
+                    className="h-20 rounded-2xl bg-[#F0F7F4] animate-pulse"
+                  />
                 ))}
               </div>
             )}

@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, Star, MapPin, CheckCircle2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Star,
+  MapPin,
+  CheckCircle2,
+} from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { apiGetService, apiCreateReservation } from "../services/api";
@@ -23,7 +30,7 @@ export default function ReservationFormPage() {
     apiGetService(id)
       .then((res) => {
         if (!active) return;
-        if (res.ok) setService(res.data);
+        if (res.ok) setService(res.data.data ?? res.data);
         else setError(res.data);
       })
       .finally(() => {
@@ -116,8 +123,9 @@ export default function ReservationFormPage() {
             </h1>
             <p className="text-sm text-[#3D5A50] mb-6">
               Ta réservation pour <strong>{nom_service}</strong> le{" "}
-              {new Date(date).toLocaleDateString("fr-FR")} à {heure} est confirmée.
-              Le prestataire te contactera pour convenir du lieu du rendez-vous.
+              {new Date(date).toLocaleDateString("fr-FR")} à {heure} est
+              confirmée. Le prestataire te contactera pour convenir du lieu du
+              rendez-vous.
             </p>
             <div className="flex items-center justify-center gap-3">
               <Link
@@ -186,12 +194,16 @@ export default function ReservationFormPage() {
                     {prestataire.quartier}
                   </span>
                 )}
-                {categorie?.nom_categorie && <span>{categorie.nom_categorie}</span>}
+                {categorie?.nom_categorie && (
+                  <span>{categorie.nom_categorie}</span>
+                )}
               </div>
             </div>
             <div className="text-right flex-shrink-0">
               <p className="text-sm font-semibold text-[#0B2B26]">
-                {tarif ? `${Number(tarif).toLocaleString("fr-FR")} F` : "Sur devis"}
+                {tarif
+                  ? `${Number(tarif).toLocaleString("fr-FR")} F`
+                  : "Sur devis"}
               </p>
             </div>
           </div>

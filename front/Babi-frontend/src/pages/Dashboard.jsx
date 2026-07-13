@@ -1,94 +1,120 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { apiGetMe, apiGetReservations, apiGetServices, apiLogout, apiUpdateReservation, apiCreateAvis } from '../services/api'
-
-import VueApercu       from '../components/VueApercu'
-import VueReservations from '../components/VueReservations'
-import VueParametres   from '../components/VueParametres'
+import { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import {
-  GridIcon, CalendarIcon, SettingsIcon, LogoutIcon, SearchIcon, BellIcon,
+  apiGetMe,
+  apiGetReservations,
+  apiGetServices,
+  apiLogout,
+  apiUpdateReservation,
+  apiCreateAvis,
+} from "../services/api";
+
+import VueApercu from "../components/VueApercu";
+import VueReservations from "../components/VueReservations";
+import VueParametres from "../components/VueParametres";
+import {
+  GridIcon,
+  CalendarIcon,
+  SettingsIcon,
+  LogoutIcon,
+  SearchIcon,
+  BellIcon,
   initials,
-} from '../components/shared'
+} from "../components/shared";
 
 const NAV_ITEMS = [
-  { key: 'apercu',       icon: <GridIcon />,     label: 'Aperçu' },
-  { key: 'reservations', icon: <CalendarIcon />, label: 'Réservations' },
-  { key: 'parametres',   icon: <SettingsIcon />, label: 'Paramètres' },
-]
+  { key: "apercu", icon: <GridIcon />, label: "Aperçu" },
+  { key: "reservations", icon: <CalendarIcon />, label: "Réservations" },
+  { key: "parametres", icon: <SettingsIcon />, label: "Paramètres" },
+];
 
 export default function Dashboard() {
-  const navigate = useNavigate()
-  const [vue, setVue]                   = useState('apercu')
-  const [user, setUser]                 = useState(null)
-  const [reservations, setReservations] = useState([])
-  const [recommandes, setRecommandes]   = useState([])
-  const [loading, setLoading]           = useState(true)
+  const navigate = useNavigate();
+  const [vue, setVue] = useState("apercu");
+  const [user, setUser] = useState(null);
+  const [reservations, setReservations] = useState([]);
+  const [recommandes, setRecommandes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([apiGetMe(), apiGetReservations(), apiGetServices()]).then(
       ([me, reservationsRes, servicesRes]) => {
-        if (me.ok) setUser(me.data)
+        if (me.ok) setUser(me.data);
 
         if (reservationsRes.ok) {
-          setReservations(Array.isArray(reservationsRes.data) ? reservationsRes.data : [])
+          const reservationsData = reservationsRes.data;
+          setReservations(
+            Array.isArray(reservationsData)
+              ? reservationsData
+              : (reservationsData.data ?? []),
+          );
         }
 
         if (servicesRes.ok) {
-          const parPrestataire = new Map()
-          servicesRes.data.forEach((s) => {
+          const parPrestataire = new Map();
+          const servicesList = Array.isArray(servicesRes.data)
+            ? servicesRes.data
+            : (servicesRes.data.data ?? []);
+          servicesList.forEach((s) => {
             if (s.prestataire && !parPrestataire.has(s.id_prestataire)) {
-              parPrestataire.set(s.id_prestataire, s)
+              parPrestataire.set(s.id_prestataire, s);
             }
-          })
-          setRecommandes([...parPrestataire.values()].slice(0, 3))
+          });
+          setRecommandes([...parPrestataire.values()].slice(0, 3));
         }
 
-        setLoading(false)
-      }
-    )
-  }, [])
+        setLoading(false);
+      },
+    );
+  }, []);
 
   async function handleLogout() {
-    await apiLogout()
-    localStorage.removeItem('token')
-    navigate('/')
+    await apiLogout();
+    localStorage.removeItem("token");
+    navigate("/");
   }
 
   async function handleCancel(id) {
-    if (!confirm('Annuler cette réservation ?')) return
-    const res = await apiUpdateReservation(id, { statut: 'annulee' })
+    if (!confirm("Annuler cette réservation ?")) return;
+    const res = await apiUpdateReservation(id, { statut: "annulee" });
     if (res.ok) {
-      setReservations((prev) => prev.map((r) => (r.id_reservation === id ? res.data : r)))
+      setReservations((prev) =>
+        prev.map((r) => (r.id_reservation === id ? res.data : r)),
+      );
     } else {
-      alert("Impossible d'annuler la réservation.")
+      alert("Impossible d'annuler la réservation.");
     }
   }
 
   async function handleMarkTerminee(id) {
-    if (!confirm('Confirmer que cette prestation est terminée ?')) return
-    const res = await apiUpdateReservation(id, { statut: 'terminee' })
+    if (!confirm("Confirmer que cette prestation est terminée ?")) return;
+    const res = await apiUpdateReservation(id, { statut: "terminee" });
     if (res.ok) {
-      setReservations((prev) => prev.map((r) => (r.id_reservation === id ? res.data : r)))
+      setReservations((prev) =>
+        prev.map((r) => (r.id_reservation === id ? res.data : r)),
+      );
     } else {
-      alert('Impossible de mettre à jour la réservation pour le moment.')
+      alert("Impossible de mettre à jour la réservation pour le moment.");
     }
   }
 
   async function handleRate(id, payload) {
-    const res = await apiCreateAvis({ ...payload, id_reservation: id })
-    if (!res.ok) return false
-    setReservations((prev) => prev.map((r) => (r.id_reservation === id ? { ...r, avis: res.data } : r)))
-    return true
+    const res = await apiCreateAvis({ ...payload, id_reservation: id });
+    if (!res.ok) return false;
+    setReservations((prev) =>
+      prev.map((r) => (r.id_reservation === id ? { ...r, avis: res.data } : r)),
+    );
+    return true;
   }
 
-  const aVenir = reservations.filter((r) => ['en_attente', 'confirmee'].includes(r.statut))
+  const aVenir = reservations.filter((r) =>
+    ["en_attente", "confirmee"].includes(r.statut),
+  );
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-babi-cream">
-
       {/* ── Sidebar ── */}
       <aside className="w-full md:w-72 bg-white border-r border-gray-100 flex flex-col justify-between p-4 md:p-6 shrink-0">
-
         <div>
           {/* Logo */}
           <div className="flex items-center gap-2 mb-6 md:mb-10">
@@ -105,12 +131,14 @@ export default function Dashboard() {
                 key={item.key}
                 onClick={() => setVue(item.key)}
                 className={`flex items-center gap-3 px-3 md:px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors text-left whitespace-nowrap md:w-full ${
-                  vue === item.key ? 'bg-babi-green text-white' : 'text-gray-500 hover:bg-gray-50'
+                  vue === item.key
+                    ? "bg-babi-green text-white"
+                    : "text-gray-500 hover:bg-gray-50"
                 }`}
               >
                 {item.icon}
                 <span className="flex-1">{item.label}</span>
-                {item.key === 'reservations' && aVenir.length > 0 && (
+                {item.key === "reservations" && aVenir.length > 0 && (
                   <span className="text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center bg-babi-green text-white">
                     {aVenir.length}
                   </span>
@@ -136,12 +164,17 @@ export default function Dashboard() {
 
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-babi-dark text-sm truncate">
-                {user ? `${user.prenom} ${user.nom}` : '—'}
+                {user ? `${user.prenom} ${user.nom}` : "—"}
               </p>
-              <p className="text-xs text-gray-400 capitalize">{user?.role ?? 'Client'}</p>
+              <p className="text-xs text-gray-400 capitalize">
+                {user?.role ?? "Client"}
+              </p>
             </div>
 
-            <button onClick={handleLogout} className="text-gray-400 hover:text-babi-dark transition-colors">
+            <button
+              onClick={handleLogout}
+              className="text-gray-400 hover:text-babi-dark transition-colors"
+            >
               <LogoutIcon />
             </button>
           </div>
@@ -150,10 +183,8 @@ export default function Dashboard() {
 
       {/* ── Main ── */}
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-
         {/* Topbar */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between mb-6 md:mb-8 gap-4">
-
           <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2.5 w-full md:max-w-sm">
             <SearchIcon />
             <input
@@ -175,7 +206,7 @@ export default function Dashboard() {
         </div>
 
         {/* Vues */}
-        {vue === 'apercu' && (
+        {vue === "apercu" && (
           <VueApercu
             user={user}
             reservations={reservations}
@@ -184,7 +215,7 @@ export default function Dashboard() {
           />
         )}
 
-        {vue === 'reservations' && (
+        {vue === "reservations" && (
           <VueReservations
             reservations={reservations}
             loading={loading}
@@ -194,10 +225,10 @@ export default function Dashboard() {
           />
         )}
 
-        {vue === 'parametres' && (
+        {vue === "parametres" && (
           <VueParametres user={user} onUserUpdate={setUser} />
         )}
       </main>
     </div>
-  )
+  );
 }

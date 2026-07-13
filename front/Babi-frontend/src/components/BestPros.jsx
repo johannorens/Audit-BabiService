@@ -1,18 +1,23 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import ServiceCard from './services/ServiceCard'
-import { apiGetServices } from '../services/api'
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import ServiceCard from "./services/ServiceCard";
+import { apiGetServices } from "../services/api";
 
 function BestPros() {
-  const [services, setServices] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     apiGetServices().then((res) => {
-      if (res.ok) setServices(res.data.slice(0, 4))
-      setLoading(false)
-    })
-  }, [])
+      if (res.ok) {
+        const servicesList = Array.isArray(res.data)
+          ? res.data
+          : (res.data.data ?? []);
+        setServices(servicesList.slice(0, 4));
+      }
+      setLoading(false);
+    });
+  }, []);
 
   return (
     <section className="py-16 px-8" id="pros">
@@ -27,7 +32,10 @@ function BestPros() {
               Les pros les mieux notés
             </h2>
           </div>
-          <Link to="/services" className="bg-white border border-gray-200 px-5 py-2.5 rounded-full text-sm font-semibold text-gray-700 hover:border-babi-green hover:text-babi-green transition-colors">
+          <Link
+            to="/services"
+            className="bg-white border border-gray-200 px-5 py-2.5 rounded-full text-sm font-semibold text-gray-700 hover:border-babi-green hover:text-babi-green transition-colors"
+          >
             Voir tout →
           </Link>
         </div>
@@ -40,7 +48,10 @@ function BestPros() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {loading
               ? Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-[420px] rounded-3xl bg-emerald-50 animate-pulse"></div>
+                  <div
+                    key={i}
+                    className="h-[420px] rounded-3xl bg-emerald-50 animate-pulse"
+                  ></div>
                 ))
               : services.map((service) => (
                   <ServiceCard key={service.id_service} service={service} />
@@ -49,7 +60,7 @@ function BestPros() {
         )}
       </div>
     </section>
-  )
+  );
 }
 
-export default BestPros
+export default BestPros;
