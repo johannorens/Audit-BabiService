@@ -15,10 +15,30 @@ services:
     networks:
       - babi_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "babiuser", "-pbabipass"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "babiuser",
+          "-pbabipass",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: babi_mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025" # interface web pour consulter les mails reçus
+      - "1025:1025" # port SMTP utilisé par Laravel (MAIL_HOST=mailpit, MAIL_PORT=1025)
+    networks:
+      - babi_network
 
   back:
     build:
@@ -36,19 +56,21 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     networks:
       - babi_network
 
   front:
     build:
-      context: ./front/mon-app-react
+      context: ./front/Babi-frontend
       dockerfile: Dockerfile
     container_name: babi_front
     restart: unless-stopped
     environment:
       VITE_API_URL: http://localhost:8000
     volumes:
-      - ./front/mon-app-react:/app
+      - ./front/Babi-frontend:/app
       - node_modules_data:/app/node_modules
     ports:
       - "5173:5173"
