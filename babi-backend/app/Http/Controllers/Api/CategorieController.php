@@ -7,6 +7,7 @@ use App\Models\Categorie;
 use Illuminate\Http\Request;
 use App\Http\Requests\Categorie\StoreCategorieRequest;
 use App\Http\Requests\Categorie\UpdateCategorieRequest;
+use App\Http\Resources\CategorieResource;
 
 class CategorieController extends Controller
 {
@@ -15,8 +16,7 @@ class CategorieController extends Controller
      */
     public function index()
     {
-        return response()->json(Categorie::all());
-
+        return CategorieResource::collection(Categorie::all());
     }
 
     /**
@@ -25,7 +25,7 @@ class CategorieController extends Controller
     public function store(StoreCategorieRequest $request)
     {
         $categorie = Categorie::create($request->validated());
-        return response()->json($categorie, 201);
+        return (new CategorieResource($categorie))->response()->setStatusCode(201);
     }
 
     /**
@@ -34,7 +34,7 @@ class CategorieController extends Controller
     public function show(string $id)
     {
         $categorie = Categorie::with(['prestataires', 'services'])->findOrFail($id);
-        return response()->json($categorie);
+        return new CategorieResource($categorie);
     }
 
     /**
@@ -44,7 +44,7 @@ class CategorieController extends Controller
     {
         $categorie = Categorie::findOrFail($id);
         $categorie->update($request->validated());
-        return response()->json($categorie);
+        return new CategorieResource($categorie->fresh());
     }
 
     /**

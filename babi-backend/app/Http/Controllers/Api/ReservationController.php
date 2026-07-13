@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Reservation;
 use App\Http\Requests\Reservation\StoreReservationRequest;
 use App\Http\Requests\Reservation\UpdateReservationRequest;
+use App\Http\Resources\ReservationResource;
 use Illuminate\Http\Request;
 
 class ReservationController extends Controller
@@ -15,20 +16,14 @@ class ReservationController extends Controller
      */
     public function index()
     {
-        if (auth()->user()?->role === 'admin') {
-            return response()->json(
-                Reservation::with(['utilisateur', 'service.prestataire', 'avis'])
-                    ->orderByDesc('date_reservation')
-                    ->get()
-            );
+        $query = Reservation::with(['utilisateur', 'service.prestataire', 'avis'])
+            ->orderByDesc('date_reservation');
+
+        if (auth()->user()?->role !== 'admin') {
+            $query->where('id_utilisateur', auth()->id());
         }
 
-        return response()->json(
-            Reservation::with(['utilisateur', 'service.prestataire', 'avis'])
-                ->where('id_utilisateur', auth()->id())
-                ->orderByDesc('date_reservation')
-                ->get()
-        );
+        return ReservationResource::collection($query->paginate(15));
     }
 
     /**
@@ -36,13 +31,16 @@ class ReservationController extends Controller
      */
     public function store(StoreReservationRequest $request)
     {
-        
         $reservation = Reservation::create([
             ...$request->validated(),
             'id_utilisateur' => auth()->id(),
             'statut' => 'confirmee',
         ]);
-        return response()->json($reservation, 201);
+        $reservation->load(['utilisateur', 'service.prestataire']);
+
+        return (new ReservationResource($reservation))
+            ->response()
+            ->setStatusCode(201);
     }
 
     /**
@@ -51,8 +49,12 @@ class ReservationController extends Controller
     public function show(string $id)
     {
         $reservation = Reservation::with(['utilisateur', 'service.prestataire', 'avis'])->findOrFail($id);
-        abort_if($reservation->id_utilisateur !== auth()->id(), 403);
-        return response()->json($reservation);
+
+        $estProprietaire = $reservation->id_utilisateur === auth()->id();
+        $estAdmin = auth()->user()?->role === 'admin';
+        abort_if(! $estProprietaire && ! $estAdmin, 403);
+
+        return new ReservationResource($reservation);
     }
 
     /**
@@ -64,12 +66,12 @@ class ReservationController extends Controller
 
         if (auth()->user()?->role === 'admin') {
             $reservation->update($request->validated());
-            return response()->json($reservation->fresh());
+            return new ReservationResource($reservation->fresh(['utilisateur', 'service.prestataire']));
         }
 
         abort_if($reservation->id_utilisateur !== auth()->id(), 403);
         $reservation->update($request->safe()->except('id_utilisateur'));
-        return response()->json($reservation);
+        return new ReservationResource($reservation->fresh(['utilisateur', 'service.prestataire']));
     }
 
     /**
@@ -78,7 +80,11 @@ class ReservationController extends Controller
     public function destroy(string $id)
     {
         $reservation = Reservation::findOrFail($id);
-        abort_if($reservation->id_utilisateur !== auth()->id(), 403);
+
+        $estProprietaire = $reservation->id_utilisateur === auth()->id();
+        $estAdmin = auth()->user()?->role === 'admin';
+        abort_if(! $estProprietaire && ! $estAdmin, 403);
+
         $reservation->delete();
         return response()->json(['message' => 'Réservation supprimée']);
     }
