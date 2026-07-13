@@ -1,0 +1,56 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: babi_mysql_prod
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - babi_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USERNAME}", "-p${DB_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  back:
+    build:
+      context: ./babi
+      dockerfile: Dockerfile.prod
+    container_name: babi_back_prod
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./babi/.env
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - babi_network
+
+  front:
+    build:
+      context: ./front/mon-app-react
+      dockerfile: Dockerfile.prod
+    container_name: babi_front_prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - back
+    networks:
+      - babi_network
+
+networks:
+  babi_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    name: babiservice2_mysql_data_prod

@@ -1,0 +1,84 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: babi_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: babiservice
+      MYSQL_USER: babiuser
+      MYSQL_PASSWORD: babipass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - babi_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "babiuser", "-pbabipass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  back:
+    build:
+      context: ./babi
+      dockerfile: Dockerfile
+    container_name: babi_back
+    restart: unless-stopped
+    volumes:
+      - ./babi:/var/www/html
+      - vendor_data:/var/www/html/vendor
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./babi/.env
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - babi_network
+
+  front:
+    build:
+      context: ./front/mon-app-react
+      dockerfile: Dockerfile
+    container_name: babi_front
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:8000
+    volumes:
+      - ./front/mon-app-react:/app
+      - node_modules_data:/app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - back
+    networks:
+      - babi_network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: babi_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: babiuser
+      PMA_PASSWORD: babipass
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - babi_network
+
+networks:
+  babi_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    name: babiservice2_mysql_data
+  vendor_data:
+  node_modules_data:

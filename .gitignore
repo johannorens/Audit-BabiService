@@ -1,0 +1,23 @@
+.DS_Store
+
+# Backend Laravel 
+babi/vendor/
+babi/.env
+babi/storage/*.key
+babi/storage/logs/*.log
+babi/storage/framework/cache/*
+babi/storage/framework/sessions/*
+babi/storage/framework/views/*
+babi/bootstrap/cache/*.php
+babi/.phpunit.cache
+babi/node_modules/
+
+# Frontend React
+front/mon-app-react/node_modules/
+front/mon-app-react/dist/
+front/mon-app-react/.env
+
+# Général
+*.log
+.idea/
+.vscode/

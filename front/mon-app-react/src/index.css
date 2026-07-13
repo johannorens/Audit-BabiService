@@ -1,0 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-babi-green: #059669;
+  --color-babi-green-light: #34d399;
+  --color-babi-cream: #fef9f5;
+  --color-babi-dark: #1a1a1a;
+
+  --font-bricolage: "Bricolage Grotesque", sans-serif;
+  --font-sans: "Hanken Grotesk", sans-serif;
+}
