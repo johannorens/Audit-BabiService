@@ -38,7 +38,7 @@ function CategoriesAdmin() {
 
   useEffect(() => {
     apiGetCategories().then((res) => {
-      if (res.ok) setCategories(res.data)
+      if (res.ok) setCategories(Array.isArray(res.data) ? res.data : res.data.data ?? [])
       setLoading(false)
     })
   }, [])
@@ -77,10 +77,12 @@ function CategoriesAdmin() {
       return
     }
 
+    const categorie = data.data ?? data
+
     if (editingId) {
-      setCategories((prev) => prev.map((c) => (c.id_categorie === editingId ? data : c)))
+      setCategories((prev) => prev.map((c) => (c.id_categorie === editingId ? categorie : c)))
     } else {
-      setCategories((prev) => [data, ...prev])
+      setCategories((prev) => [categorie, ...prev])
     }
     setModalOpen(false)
   }

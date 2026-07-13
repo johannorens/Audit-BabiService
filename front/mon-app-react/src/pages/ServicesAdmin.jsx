@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import AdminLayout from '../components/AdminLayout'
+import { useEffect, useState } from "react";
+import AdminLayout from "../components/AdminLayout";
 import {
   API_URL,
   apiGetServices,
@@ -8,138 +8,208 @@ import {
   apiCreateService,
   apiUpdateService,
   apiDeleteService,
-} from '../services/api'
+} from "../services/api";
 
 const PlusIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
-    <path d="M10 4.16667V15.8333M4.16667 10H15.8333" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 20 20"
+    fill="none"
+  >
+    <path
+      d="M10 4.16667V15.8333M4.16667 10H15.8333"
+      stroke="currentColor"
+      strokeWidth="1.66667"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
-)
+);
 
 const PencilIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
-    <path d="M14.1667 2.5L17.5 5.83333L7.08333 16.25L2.5 17.5L3.75 12.9167L14.1667 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 20 20"
+    fill="none"
+  >
+    <path
+      d="M14.1667 2.5L17.5 5.83333L7.08333 16.25L2.5 17.5L3.75 12.9167L14.1667 2.5Z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
-)
+);
 
 const TrashIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
-    <path d="M2.5 5H17.5M7.5 5V3.33333C7.5 2.8731 7.8731 2.5 8.33333 2.5H11.6667C12.1269 2.5 12.5 2.8731 12.5 3.33333V5M15.8333 5V16.6667C15.8333 17.1269 15.4602 17.5 15 17.5H5C4.53976 17.5 4.16667 17.1269 4.16667 16.6667V5H15.8333Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 20 20"
+    fill="none"
+  >
+    <path
+      d="M2.5 5H17.5M7.5 5V3.33333C7.5 2.8731 7.8731 2.5 8.33333 2.5H11.6667C12.1269 2.5 12.5 2.8731 12.5 3.33333V5M15.8333 5V16.6667C15.8333 17.1269 15.4602 17.5 15 17.5H5C4.53976 17.5 4.16667 17.1269 4.16667 16.6667V5H15.8333Z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
-)
+);
 
-const emptyForm = { nom_service: '', description: '', tarif: '', disponibilite: true, id_prestataire: '', id_categorie: '' }
+const emptyForm = {
+  nom_service: "",
+  description: "",
+  tarif: "",
+  disponibilite: true,
+  id_prestataire: "",
+  id_categorie: "",
+};
 
 function initials(prenom, nom) {
-  return `${(prenom?.[0] ?? '').toUpperCase()}${(nom?.[0] ?? '').toUpperCase()}`
+  return `${(prenom?.[0] ?? "").toUpperCase()}${(nom?.[0] ?? "").toUpperCase()}`;
 }
 
 function formatMontant(value) {
-  return `${Number(value ?? 0).toLocaleString('fr-FR')} F`
+  return `${Number(value ?? 0).toLocaleString("fr-FR")} F`;
 }
 
 function ServicesAdmin() {
-  const [services, setServices] = useState([])
-  const [prestataires, setPrestataires] = useState([])
-  const [categories, setCategories] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingId, setEditingId] = useState(null)
-  const [form, setForm] = useState(emptyForm)
-  const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [photoFile, setPhotoFile] = useState(null)
-  const [photoPreview, setPhotoPreview] = useState('')
+  const [services, setServices] = useState([]);
+  const [prestataires, setPrestataires] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
 
   useEffect(() => {
-    Promise.all([apiGetServices(), apiGetPrestataires(), apiGetCategories()]).then(
-      ([servicesRes, prestatairesRes, categoriesRes]) => {
-        if (servicesRes.ok) setServices(servicesRes.data)
-        if (prestatairesRes.ok) setPrestataires(prestatairesRes.data)
-        if (categoriesRes.ok) setCategories(categoriesRes.data)
-        setLoading(false)
-      }
-    )
-  }, [])
+    Promise.all([
+      apiGetServices(),
+      apiGetPrestataires(),
+      apiGetCategories(),
+    ]).then(([servicesRes, prestatairesRes, categoriesRes]) => {
+      if (servicesRes.ok)
+        setServices(
+          Array.isArray(servicesRes.data)
+            ? servicesRes.data
+            : (servicesRes.data.data ?? []),
+        );
+      if (prestatairesRes.ok)
+        setPrestataires(
+          Array.isArray(prestatairesRes.data)
+            ? prestatairesRes.data
+            : (prestatairesRes.data.data ?? []),
+        );
+      if (categoriesRes.ok)
+        setCategories(
+          Array.isArray(categoriesRes.data)
+            ? categoriesRes.data
+            : (categoriesRes.data.data ?? []),
+        );
+      setLoading(false);
+    });
+  }, []);
 
   function openCreateModal() {
-    setEditingId(null)
-    setForm(emptyForm)
-    setPhotoFile(null)
-    setPhotoPreview('')
-    setError('')
-    setModalOpen(true)
+    setEditingId(null);
+    setForm(emptyForm);
+    setPhotoFile(null);
+    setPhotoPreview("");
+    setError("");
+    setModalOpen(true);
   }
 
   function openEditModal(service) {
-    setEditingId(service.id_service)
+    setEditingId(service.id_service);
     setForm({
       nom_service: service.nom_service,
-      description: service.description ?? '',
+      description: service.description ?? "",
       tarif: service.tarif,
       disponibilite: Boolean(service.disponibilite),
-      id_prestataire: service.id_prestataire,
-      id_categorie: service.id_categorie,
-    })
-    setPhotoFile(null)
-    setPhotoPreview(service.photo_path ? (service.photo_path.startsWith('http') ? service.photo_path : `${API_URL}${service.photo_path}`) : '')
-    setError('')
-    setModalOpen(true)
+      id_prestataire: service.prestataire?.id_prestataire ?? "",
+      id_categorie: service.categorie?.id_categorie ?? "",
+    });
+    setPhotoFile(null);
+    setPhotoPreview(
+      service.photo_url
+        ? service.photo_url.startsWith("http")
+          ? service.photo_url
+          : `${API_URL}${service.photo_url}`
+        : "",
+    );
+    setError("");
+    setModalOpen(true);
   }
 
   function handleChange(e) {
-    const { name, type, checked, value } = e.target
-    setForm({ ...form, [name]: type === 'checkbox' ? checked : value })
+    const { name, type, checked, value } = e.target;
+    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   }
 
   function handlePhotoChange(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setPhotoFile(file)
-    setPhotoPreview(URL.createObjectURL(file))
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
   }
 
   async function handleSubmit(e) {
-    e.preventDefault()
-    setError('')
-    setSaving(true)
+    e.preventDefault();
+    setError("");
+    setSaving(true);
 
-    const formData = new FormData()
-    formData.append('nom_service', form.nom_service)
-    formData.append('description', form.description ?? '')
-    formData.append('tarif', String(form.tarif))
-    formData.append('disponibilite', form.disponibilite ? '1' : '0')
-    formData.append('id_prestataire', String(form.id_prestataire))
-    formData.append('id_categorie', String(form.id_categorie))
+    const formData = new FormData();
+    formData.append("nom_service", form.nom_service);
+    formData.append("description", form.description ?? "");
+    formData.append("tarif", String(form.tarif));
+    formData.append("disponibilite", form.disponibilite ? "1" : "0");
+    formData.append("id_prestataire", String(form.id_prestataire));
+    formData.append("id_categorie", String(form.id_categorie));
 
     if (photoFile) {
-      formData.append('photo', photoFile)
+      formData.append("photo", photoFile);
     }
 
     const { ok, data } = editingId
       ? await apiUpdateService(editingId, formData)
-      : await apiCreateService(formData)
+      : await apiCreateService(formData);
 
-    setSaving(false)
+    setSaving(false);
 
     if (!ok) {
-      setError(data.message || 'Une erreur est survenue.')
-      return
+      setError(data.message || "Une erreur est survenue.");
+      return;
     }
 
+    const service = data.data ?? data;
+
     if (editingId) {
-      setServices((prev) => prev.map((s) => (s.id_service === editingId ? data : s)))
+      setServices((prev) =>
+        prev.map((s) => (s.id_service === editingId ? service : s)),
+      );
     } else {
-      setServices((prev) => [data, ...prev])
+      setServices((prev) => [service, ...prev]);
     }
-    setModalOpen(false)
+    setModalOpen(false);
   }
 
   async function handleDelete(id) {
-    if (!confirm('Supprimer cette annonce ?')) return
-    const res = await apiDeleteService(id)
+    if (!confirm("Supprimer cette annonce ?")) return;
+    const res = await apiDeleteService(id);
     if (res.ok) {
-      setServices((prev) => prev.filter((s) => s.id_service !== id))
+      setServices((prev) => prev.filter((s) => s.id_service !== id));
     }
   }
 
@@ -172,21 +242,37 @@ function ServicesAdmin() {
             </thead>
             <tbody>
               {services.map((service) => (
-                <tr key={service.id_service} className="border-t border-gray-100">
-                  <td className="py-3 pr-4 font-semibold text-babi-dark">{service.nom_service}</td>
+                <tr
+                  key={service.id_service}
+                  className="border-t border-gray-100"
+                >
+                  <td className="py-3 pr-4 font-semibold text-babi-dark">
+                    {service.nom_service}
+                  </td>
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-2">
                       <span className="w-7 h-7 rounded-full bg-violet-200 text-violet-700 flex items-center justify-center text-xs font-bold shrink-0">
-                        {initials(service.prestataire?.prenom, service.prestataire?.nom)}
+                        {initials(
+                          service.prestataire?.prenom,
+                          service.prestataire?.nom,
+                        )}
                       </span>
-                      <span className="text-gray-600">{service.prestataire?.prenom} {service.prestataire?.nom}</span>
+                      <span className="text-gray-600">
+                        {service.prestataire?.prenom} {service.prestataire?.nom}
+                      </span>
                     </div>
                   </td>
-                  <td className="py-3 pr-4 text-gray-500">{service.categorie?.nom_categorie ?? '—'}</td>
-                  <td className="py-3 pr-4 text-gray-500">{formatMontant(service.tarif)}</td>
+                  <td className="py-3 pr-4 text-gray-500">
+                    {service.categorie?.nom_categorie ?? "—"}
+                  </td>
+                  <td className="py-3 pr-4 text-gray-500">
+                    {formatMontant(service.tarif)}
+                  </td>
                   <td className="py-3 pr-4">
-                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${service.disponibilite ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {service.disponibilite ? 'oui' : 'non'}
+                    <span
+                      className={`text-xs font-semibold px-3 py-1 rounded-full ${service.disponibilite ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}`}
+                    >
+                      {service.disponibilite ? "oui" : "non"}
                     </span>
                   </td>
                   <td className="py-3">
@@ -211,7 +297,9 @@ function ServicesAdmin() {
               ))}
               {!loading && services.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-gray-500">Aucune annonce pour le moment.</td>
+                  <td colSpan={6} className="py-6 text-center text-gray-500">
+                    Aucune annonce pour le moment.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -224,17 +312,24 @@ function ServicesAdmin() {
           <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
             <div className="px-6 pt-6 pb-3">
               <h2 className="text-xl font-extrabold text-babi-dark font-bricolage">
-                {editingId ? "Modifier l'annonce" : 'Ajouter une annonce'}
+                {editingId ? "Modifier l'annonce" : "Ajouter une annonce"}
               </h2>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 pb-6 flex flex-col gap-4">
+            <form
+              onSubmit={handleSubmit}
+              className="flex-1 overflow-y-auto px-6 pb-6 flex flex-col gap-4"
+            >
               {error && (
-                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">{error}</p>
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+                  {error}
+                </p>
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-babi-dark mb-1.5">Nom de l'annonce</label>
+                <label className="block text-sm font-semibold text-babi-dark mb-1.5">
+                  Nom de l'annonce
+                </label>
                 <input
                   type="text"
                   name="nom_service"
@@ -246,7 +341,9 @@ function ServicesAdmin() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-babi-dark mb-1.5">Description</label>
+                <label className="block text-sm font-semibold text-babi-dark mb-1.5">
+                  Description
+                </label>
                 <textarea
                   name="description"
                   value={form.description}
@@ -257,7 +354,9 @@ function ServicesAdmin() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-babi-dark mb-1.5">Tarif (F CFA)</label>
+                <label className="block text-sm font-semibold text-babi-dark mb-1.5">
+                  Tarif (F CFA)
+                </label>
                 <input
                   type="number"
                   name="tarif"
@@ -271,7 +370,9 @@ function ServicesAdmin() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-babi-dark mb-1.5">Prestataire</label>
+                <label className="block text-sm font-semibold text-babi-dark mb-1.5">
+                  Prestataire
+                </label>
                 <select
                   name="id_prestataire"
                   value={form.id_prestataire}
@@ -279,9 +380,14 @@ function ServicesAdmin() {
                   required
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:border-babi-green transition-colors bg-white"
                 >
-                  <option value="" disabled>Choisir un prestataire</option>
+                  <option value="" disabled>
+                    Choisir un prestataire
+                  </option>
                   {prestataires.map((prestataire) => (
-                    <option key={prestataire.id_prestataire} value={prestataire.id_prestataire}>
+                    <option
+                      key={prestataire.id_prestataire}
+                      value={prestataire.id_prestataire}
+                    >
                       {prestataire.prenom} {prestataire.nom}
                     </option>
                   ))}
@@ -289,7 +395,9 @@ function ServicesAdmin() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-babi-dark mb-1.5">Catégorie</label>
+                <label className="block text-sm font-semibold text-babi-dark mb-1.5">
+                  Catégorie
+                </label>
                 <select
                   name="id_categorie"
                   value={form.id_categorie}
@@ -297,9 +405,14 @@ function ServicesAdmin() {
                   required
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:border-babi-green transition-colors bg-white"
                 >
-                  <option value="" disabled>Choisir une catégorie</option>
+                  <option value="" disabled>
+                    Choisir une catégorie
+                  </option>
                   {categories.map((categorie) => (
-                    <option key={categorie.id_categorie} value={categorie.id_categorie}>
+                    <option
+                      key={categorie.id_categorie}
+                      value={categorie.id_categorie}
+                    >
                       {categorie.nom_categorie}
                     </option>
                   ))}
@@ -307,7 +420,9 @@ function ServicesAdmin() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-babi-dark mb-1.5">Photo de la prestation</label>
+                <label className="block text-sm font-semibold text-babi-dark mb-1.5">
+                  Photo de la prestation
+                </label>
                 <input
                   type="file"
                   accept="image/*"
@@ -316,17 +431,28 @@ function ServicesAdmin() {
                 />
                 {photoPreview && (
                   <div className="mt-2">
-                    <img src={photoPreview} alt="Aperçu de la prestation" className="h-28 w-full object-cover rounded-xl border border-gray-100" />
+                    <img
+                      src={photoPreview}
+                      alt="Aperçu de la prestation"
+                      className="h-28 w-full object-cover rounded-xl border border-gray-100"
+                    />
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-babi-dark mb-1.5">Disponibilité</label>
+                <label className="block text-sm font-semibold text-babi-dark mb-1.5">
+                  Disponibilité
+                </label>
                 <select
                   name="disponibilite"
                   value={String(form.disponibilite)}
-                  onChange={(e) => setForm({ ...form, disponibilite: e.target.value === 'true' })}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      disponibilite: e.target.value === "true",
+                    })
+                  }
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:border-babi-green transition-colors bg-white"
                 >
                   <option value="true">Oui, disponible</option>
@@ -347,7 +473,7 @@ function ServicesAdmin() {
                   disabled={saving}
                   className="flex-1 bg-babi-green text-white font-semibold py-3 rounded-xl hover:-translate-y-0.5 hover:shadow-lg transition-all disabled:opacity-60 disabled:hover:-translate-y-0"
                 >
-                  {saving ? 'Enregistrement...' : 'Enregistrer'}
+                  {saving ? "Enregistrement..." : "Enregistrer"}
                 </button>
               </div>
             </form>
@@ -355,7 +481,7 @@ function ServicesAdmin() {
         </div>
       )}
     </AdminLayout>
-  )
+  );
 }
 
-export default ServicesAdmin
+export default ServicesAdmin;

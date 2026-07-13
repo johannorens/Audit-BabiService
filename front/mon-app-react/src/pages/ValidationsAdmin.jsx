@@ -1,100 +1,136 @@
-import { useEffect, useState } from 'react'
-import AdminLayout from '../components/AdminLayout'
+import { useEffect, useState } from "react";
+import AdminLayout from "../components/AdminLayout";
 import {
   apiGetAdminDashboard,
   apiValiderPrestataire,
   apiRejeterPrestataire,
   apiCreateService,
-} from '../services/api'
+} from "../services/api";
 
 const CheckIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
-    <path d="M16.6667 5L7.5 14.1667L3.33333 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 20 20"
+    fill="none"
+  >
+    <path
+      d="M16.6667 5L7.5 14.1667L3.33333 10"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
-)
+);
 
 const CloseIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
-    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 20 20"
+    fill="none"
+  >
+    <path
+      d="M15 5L5 15M5 5L15 15"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
-)
+);
 
 function initials(prenom, nom) {
-  return `${(prenom?.[0] ?? '').toUpperCase()}${(nom?.[0] ?? '').toUpperCase()}`
+  return `${(prenom?.[0] ?? "").toUpperCase()}${(nom?.[0] ?? "").toUpperCase()}`;
 }
 
 function relativeTime(dateStr) {
-  const diffMs = Date.now() - new Date(dateStr).getTime()
-  const minutes = Math.floor(diffMs / 60000)
-  if (minutes < 1) return "à l'instant"
-  if (minutes < 60) return `il y a ${minutes} min`
-  const heures = Math.floor(minutes / 60)
-  if (heures < 24) return `il y a ${heures} h`
-  const jours = Math.floor(heures / 24)
-  return `il y a ${jours} j`
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const heures = Math.floor(minutes / 60);
+  if (heures < 24) return `il y a ${heures} h`;
+  const jours = Math.floor(heures / 24);
+  return `il y a ${jours} j`;
 }
 
-const emptyForm = { nom_service: '', description: '', tarif: '', disponibilite: true }
+const emptyForm = {
+  nom_service: "",
+  description: "",
+  tarif: "",
+  disponibilite: true,
+};
 
 function ValidationsAdmin() {
-  const [aValider, setAValider] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [modalPrestataire, setModalPrestataire] = useState(null)
-  const [form, setForm] = useState(emptyForm)
-  const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [aValider, setAValider] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modalPrestataire, setModalPrestataire] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     apiGetAdminDashboard().then((res) => {
-      if (res.ok) setAValider(res.data.a_valider)
-      setLoading(false)
-    })
-  }, [])
+      if (res.ok) setAValider(res.data.a_valider);
+      setLoading(false);
+    });
+  }, []);
 
   function openModal(prestataire) {
-    setModalPrestataire(prestataire)
-    setForm(emptyForm)
-    setError('')
+    setModalPrestataire(prestataire);
+    setForm(emptyForm);
+    setError("");
   }
 
   function handleChange(e) {
-    const { name, type, checked, value } = e.target
-    setForm({ ...form, [name]: type === 'checkbox' ? checked : value })
+    const { name, type, checked, value } = e.target;
+    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   }
 
   async function handleRejeter(id) {
-    const res = await apiRejeterPrestataire(id)
+    const res = await apiRejeterPrestataire(id);
     if (res.ok) {
-      setAValider((prev) => prev.filter((p) => p.id_prestataire !== id))
+      setAValider((prev) => prev.filter((p) => p.id_prestataire !== id));
     }
   }
 
   async function handleSubmit(e) {
-    e.preventDefault()
-    setError('')
-    setSaving(true)
+    e.preventDefault();
+    setError("");
+    setSaving(true);
 
-    const valider = await apiValiderPrestataire(modalPrestataire.id_prestataire)
+    const valider = await apiValiderPrestataire(
+      modalPrestataire.id_prestataire,
+    );
     if (!valider.ok) {
-      setSaving(false)
-      setError('Impossible de valider ce prestataire.')
-      return
+      setSaving(false);
+      setError("Impossible de valider ce prestataire.");
+      return;
     }
 
     const service = await apiCreateService({
       ...form,
       id_prestataire: modalPrestataire.id_prestataire,
-      id_categorie: modalPrestataire.id_categorie,
-    })
-    setSaving(false)
+      id_categorie: modalPrestataire.categorie?.id_categorie,
+    });
+    setSaving(false);
 
     if (!service.ok) {
-      setError(service.data.message || "Le prestataire est validé mais l'annonce n'a pas pu être créée.")
-      return
+      setError(
+        service.data.message ||
+          "Le prestataire est validé mais l'annonce n'a pas pu être créée.",
+      );
+      return;
     }
 
-    setAValider((prev) => prev.filter((p) => p.id_prestataire !== modalPrestataire.id_prestataire))
-    setModalPrestataire(null)
+    setAValider((prev) =>
+      prev.filter((p) => p.id_prestataire !== modalPrestataire.id_prestataire),
+    );
+    setModalPrestataire(null);
   }
 
   return (
@@ -119,19 +155,32 @@ function ValidationsAdmin() {
             </thead>
             <tbody>
               {aValider.map((prestataire) => (
-                <tr key={prestataire.id_prestataire} className="border-t border-gray-100">
+                <tr
+                  key={prestataire.id_prestataire}
+                  className="border-t border-gray-100"
+                >
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-2">
                       <span className="w-7 h-7 rounded-full bg-violet-200 text-violet-700 flex items-center justify-center text-xs font-bold shrink-0">
                         {initials(prestataire.prenom, prestataire.nom)}
                       </span>
-                      <span className="font-semibold text-babi-dark">{prestataire.prenom} {prestataire.nom}</span>
+                      <span className="font-semibold text-babi-dark">
+                        {prestataire.prenom} {prestataire.nom}
+                      </span>
                     </div>
                   </td>
-                  <td className="py-3 pr-4 text-gray-500">{prestataire.categorie?.nom_categorie ?? '—'}</td>
-                  <td className="py-3 pr-4 text-gray-500">{prestataire.localisation ?? '—'}</td>
-                  <td className="py-3 pr-4 text-gray-500">{prestataire.telephone ?? prestataire.email}</td>
-                  <td className="py-3 pr-4 text-gray-500">{relativeTime(prestataire.created_at)}</td>
+                  <td className="py-3 pr-4 text-gray-500">
+                    {prestataire.categorie?.nom_categorie ?? "—"}
+                  </td>
+                  <td className="py-3 pr-4 text-gray-500">
+                    {prestataire.localisation ?? "—"}
+                  </td>
+                  <td className="py-3 pr-4 text-gray-500">
+                    {prestataire.telephone ?? prestataire.email}
+                  </td>
+                  <td className="py-3 pr-4 text-gray-500">
+                    {relativeTime(prestataire.created_at)}
+                  </td>
                   <td className="py-3">
                     <div className="flex items-center gap-2">
                       <button
@@ -141,7 +190,9 @@ function ValidationsAdmin() {
                         <CheckIcon /> Valider et publier l'annonce
                       </button>
                       <button
-                        onClick={() => handleRejeter(prestataire.id_prestataire)}
+                        onClick={() =>
+                          handleRejeter(prestataire.id_prestataire)
+                        }
                         className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-100 transition-colors"
                         title="Rejeter"
                       >
@@ -153,7 +204,9 @@ function ValidationsAdmin() {
               ))}
               {!loading && aValider.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-gray-500">Aucun prestataire en attente de validation.</td>
+                  <td colSpan={6} className="py-6 text-center text-gray-500">
+                    Aucun prestataire en attente de validation.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -168,16 +221,21 @@ function ValidationsAdmin() {
               Valider {modalPrestataire.prenom} {modalPrestataire.nom}
             </h2>
             <p className="text-sm text-gray-500 mb-4">
-              {modalPrestataire.categorie?.nom_categorie} · {modalPrestataire.localisation ?? '—'}
+              {modalPrestataire.categorie?.nom_categorie} ·{" "}
+              {modalPrestataire.localisation ?? "—"}
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               {error && (
-                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">{error}</p>
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+                  {error}
+                </p>
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-babi-dark mb-1.5">Nom de l'annonce</label>
+                <label className="block text-sm font-semibold text-babi-dark mb-1.5">
+                  Nom de l'annonce
+                </label>
                 <input
                   type="text"
                   name="nom_service"
@@ -189,7 +247,9 @@ function ValidationsAdmin() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-babi-dark mb-1.5">Description</label>
+                <label className="block text-sm font-semibold text-babi-dark mb-1.5">
+                  Description
+                </label>
                 <textarea
                   name="description"
                   value={form.description}
@@ -200,7 +260,9 @@ function ValidationsAdmin() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-babi-dark mb-1.5">Tarif (F CFA)</label>
+                <label className="block text-sm font-semibold text-babi-dark mb-1.5">
+                  Tarif (F CFA)
+                </label>
                 <input
                   type="number"
                   name="tarif"
@@ -237,7 +299,7 @@ function ValidationsAdmin() {
                   disabled={saving}
                   className="flex-1 bg-babi-green text-white font-semibold py-3 rounded-xl hover:-translate-y-0.5 hover:shadow-lg transition-all disabled:opacity-60 disabled:hover:-translate-y-0"
                 >
-                  {saving ? 'Publication...' : 'Valider et publier'}
+                  {saving ? "Publication..." : "Valider et publier"}
                 </button>
               </div>
             </form>
@@ -245,7 +307,7 @@ function ValidationsAdmin() {
         </div>
       )}
     </AdminLayout>
-  )
+  );
 }
 
-export default ValidationsAdmin
+export default ValidationsAdmin;
