@@ -3,6 +3,8 @@ FROM php:8.4-cli
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
+    -o Dpkg::Options::="--force-confdef" \
+    -o Dpkg::Options::="--force-confold" \
     git \
     unzip \
     libzip-dev \
