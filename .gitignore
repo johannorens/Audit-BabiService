@@ -13,9 +13,11 @@ babi/.phpunit.cache
 babi/node_modules/
 
 # Frontend React
-front/mon-app-react/node_modules/
-front/mon-app-react/dist/
-front/mon-app-react/.env
+front/Babi-frontend/node_modules/
+front/Babi-frontend/dist/
+front/Babi-frontend/.env
+front/Babi-frontend/audit-report.json
+
 
 # Général
 *.log
